@@ -48,7 +48,27 @@
     #status { text-align: center; margin-top: 30px; font-weight: bold; min-height: 24px; font-size: 1.1rem; padding: 15px; border-radius: 10px; max-width: 600px; margin-left: auto; margin-right: auto; }
     .success { color: #34d399; background: rgba(16, 185, 129, 0.1); border: 1px solid #10b981; }
     .error { color: #f87171; background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; }
-    canvas { border: 2px solid #475569; border-radius: 8px; background: white; cursor: crosshair; touch-action: none; max-width: 100%; margin: 10px 0; }
+    
+    /* ✅ CORRECTION : canvas par défaut, SAUF celui d'annotation */
+    canvas:not(#annotate-canvas) { 
+      border: 2px solid #475569; 
+      border-radius: 8px; 
+      background: white; 
+      cursor: crosshair; 
+      touch-action: none; 
+      max-width: 100%; 
+      margin: 10px 0; 
+    }
+    
+    /* ✅ Canvas d'annotation avec styles spécifiques */
+    #annotate-canvas {
+      display: block;
+      border: none;
+      margin: 0;
+      background: transparent !important;
+      touch-action: none;
+    }
+    
     .info { font-size: 0.9rem; color: #94a3b8; margin-top: 8px; }
     .sig-options, .rotate-options, .watermark-options, .compress-options { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 15px; }
     .sig-options label, .rotate-options label, .watermark-options label, .compress-options label { font-weight: 500; color: #cbd5e1; }
@@ -60,7 +80,7 @@
     .annotate-toolbar { display: flex; flex-wrap: wrap; gap: 10px; margin: 15px 0; padding: 15px; background: #0f172a; border-radius: 10px; align-items: center; }
     .annotate-toolbar .separator { width: 1px; height: 30px; background: #475569; margin: 0 5px; }
     
-    /* ✅ Conteneur pour le canvas unique */
+    /* ✅ Conteneur du canvas d'annotation */
     .annotate-canvas-wrapper {
       text-align: center;
       background: white;
@@ -69,11 +89,6 @@
       overflow: auto;
       margin: 20px auto;
       max-width: 100%;
-    }
-    #annotate-canvas {
-      display: block;
-      margin: 0 auto;
-      border: none;
     }
     
     .page-nav { display: flex; align-items: center; justify-content: center; gap: 15px; margin: 15px 0; flex-wrap: wrap; }
@@ -380,7 +395,7 @@
       </div>
     </div>
 
-    <!-- ANNOTATION - UN SEUL CANVAS (méthode qui a marché dans le test) -->
+    <!-- ANNOTATION -->
     <div class="card annotate">
       <h2>🎨 Annotation Interactive</h2>
       <p class="info">Dessinez des flèches, cercles, rectangles et texte sur votre PDF avec couleurs personnalisables</p>
@@ -1035,7 +1050,7 @@
     });
 
     // ============================================================
-    // ===== ANNOTATION - UN SEUL CANVAS (méthode qui a marché) =====
+    // ===== ANNOTATION =====
     // ============================================================
     let fabricCanvas = null;
     let currentAnnotatePage = 1;
@@ -1083,18 +1098,11 @@
         document.getElementById('annotate-workspace').style.display = 'block';
         updateCounter('annotate-counter', `🎨 Prêt à annoter ${totalAnnotatePages} page${totalAnnotatePages > 1 ? 's' : ''}`);
 
-        // ✅ Détruire l'ancien canvas s'il existe
-        if (fabricCanvas) {
-          fabricCanvas.dispose();
-          fabricCanvas = null;
-        }
-
         await loadAnnotatePage(1);
         setStatus('✅ PDF chargé ! Choisis une couleur et un outil.');
       } catch (err) { setStatus('❌ Erreur: ' + err.message, true); console.error(err); }
     });
 
-    // ✅ Charger une page : UN SEUL CANVAS avec PDF en fond
     async function loadAnnotatePage(pageNum) {
       currentAnnotatePage = pageNum;
       document.getElementById('current-page').textContent = pageNum;
@@ -1112,12 +1120,12 @@
       await page.render({ canvasContext: ctx, viewport }).promise;
       const dataURL = tempCanvas.toDataURL();
 
-      // 2. ✅ IMPORTANT : Définir les dimensions du canvas HTML AVANT de créer Fabric
+      // 2. ✅ IMPORTANT : Définir les dimensions AVANT de créer Fabric
       const canvasEl = document.getElementById('annotate-canvas');
       canvasEl.width = viewport.width;
       canvasEl.height = viewport.height;
 
-      // 3. ✅ Créer Fabric.js APRÈS avoir défini les dimensions
+      // 3. Créer/Re-créer Fabric.js
       if (fabricCanvas) fabricCanvas.dispose();
       fabricCanvas = new fabric.Canvas('annotate-canvas', {
         isDrawingMode: false,
@@ -1138,9 +1146,8 @@
       fabricCanvas.freeDrawingBrush.color = currentColor;
       fabricCanvas.freeDrawingBrush.width = currentThickness;
 
-      // 6. Recharger les annotations si elles existent
+      // 6. Recharger les annotations
       if (pageAnnotationsData[pageNum] && pageAnnotationsData[pageNum].length > 0) {
-        // Attendre un peu que le fond soit chargé
         setTimeout(() => {
           fabricCanvas.loadFromJSON(pageAnnotationsData[pageNum], () => {
             fabricCanvas.renderAll();
