@@ -2,220 +2,308 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Mon outil PDF</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mon Super Outil PDF</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      max-width: 600px;
-      margin: 50px auto;
-      padding: 20px;
-      text-align: center;
-    }
-    h1 { color: #2563eb; }
-    h2 { color: #059669; margin-top: 40px; }
-    .drop-zone {
-      border: 3px dashed #2563eb;
-      padding: 40px;
-      margin: 20px 0;
-      border-radius: 10px;
-      cursor: pointer;
-    }
-    .drop-zone:hover { background: #eff6ff; }
-    button {
-      background: #2563eb;
-      color: white;
-      border: none;
-      padding: 12px 24px;
-      font-size: 16px;
-      border-radius: 6px;
-      cursor: pointer;
-      margin: 10px 5px;
-    }
+    body { font-family: 'Segoe UI', Arial, sans-serif; max-width: 700px; margin: 30px auto; padding: 20px; background: #f8fafc; color: #334155; }
+    h1 { text-align: center; color: #2563eb; margin-bottom: 30px; }
+    h2 { color: #0f766e; font-size: 1.2rem; border-bottom: 2px solid #ccfbf1; padding-bottom: 5px; margin-top: 0; }
+    .section { background: white; border: 1px solid #e2e8f0; padding: 20px; margin-bottom: 25px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+    .drop-zone { border: 2px dashed #94a3b8; padding: 30px; margin: 15px 0; border-radius: 8px; cursor: pointer; text-align: center; transition: 0.2s; }
+    .drop-zone:hover { border-color: #2563eb; background: #eff6ff; }
+    button { background: #2563eb; color: white; border: none; padding: 10px 20px; font-size: 15px; border-radius: 6px; cursor: pointer; margin: 5px; transition: 0.2s; }
     button:hover { background: #1d4ed8; }
-    button:disabled { background: #9ca3af; cursor: not-allowed; }
-    input[type="text"] {
-      padding: 10px;
-      font-size: 14px;
-      border: 2px solid #d1d5db;
-      border-radius: 6px;
-      width: 200px;
-    }
-    #status { margin-top: 20px; color: #059669; font-weight: bold; }
-    .section {
-      border: 1px solid #e5e7eb;
-      padding: 20px;
-      margin: 20px 0;
-      border-radius: 10px;
-    }
+    button:disabled { background: #cbd5e1; cursor: not-allowed; }
+    button.secondary { background: #64748b; }
+    button.secondary:hover { background: #475569; }
+    input[type="text"] { padding: 10px; border: 2px solid #cbd5e1; border-radius: 6px; width: 180px; font-size: 14px; }
+    #status { text-align: center; margin-top: 20px; font-weight: bold; min-height: 24px; }
+    .success { color: #059669; }
+    .error { color: #dc2626; }
+    canvas { border: 1px solid #cbd5e1; border-radius: 6px; background: white; cursor: crosshair; touch-action: none; max-width: 100%; }
+    .info { font-size: 0.9rem; color: #64748b; margin-top: 5px; }
   </style>
 </head>
 <body>
-  <h1>📄 Mon outil PDF</h1>
 
-  <!-- SECTION FUSION -->
+  <h1>📄 Mon Outil PDF 100% Local</h1>
+  <p style="text-align:center; color:#64748b;">Vos fichiers ne quittent jamais votre navigateur. 🔒</p>
+
+  <!-- 1. FUSION -->
   <div class="section">
-    <h2>🔗 Fusionner des PDF</h2>
-    <p>Choisis plusieurs fichiers PDF, puis clique sur "Fusionner"</p>
-
-    <div class="drop-zone" onclick="document.getElementById('files').click()">
-      📁 Clique ici pour choisir des PDF
-      <input type="file" id="files" accept="application/pdf" multiple hidden>
-    </div>
-
-    <div id="file-list"></div>
-
-    <button id="merge-btn" disabled>Fusionner les PDF</button>
+    <h2>🔗 1. Fusionner des PDF</h2>
+    <div class="drop-zone" onclick="document.getElementById('merge-files').click()">📁 Choisir plusieurs PDF</div>
+    <input type="file" id="merge-files" accept="application/pdf" multiple hidden>
+    <div id="merge-list" class="info"></div>
+    <button id="merge-btn" disabled>Fusionner</button>
   </div>
 
-  <!-- SECTION DECOUPE -->
+  <!-- 2. DECOUPE -->
   <div class="section">
-    <h2>✂️ Découper un PDF</h2>
-    <p>Choisis un PDF, puis indique les pages à extraire</p>
+    <h2>✂️ 2. Découper / Extraire des pages</h2>
+    <div class="drop-zone" onclick="document.getElementById('split-file').click()">📁 Choisir un PDF</div>
+    <input type="file" id="split-file" accept="application/pdf" hidden>
+    <div id="split-info" class="info"></div>
+    <input type="text" id="pages-input" placeholder="Ex: 1, 3, 5-7">
+    <button id="split-btn" disabled>Extraire</button>
+  </div>
 
-    <div class="drop-zone" onclick="document.getElementById('split-file').click()">
-      📁 Clique ici pour choisir un PDF
-      <input type="file" id="split-file" accept="application/pdf" hidden>
-    </div>
+  <!-- 3. IMAGES VERS PDF -->
+  <div class="section">
+    <h2>🖼️ 3. Images vers PDF</h2>
+    <div class="drop-zone" onclick="document.getElementById('img-files').click()">📁 Choisir des images (JPG, PNG)</div>
+    <input type="file" id="img-files" accept="image/jpeg, image/png" multiple hidden>
+    <div id="img-list" class="info"></div>
+    <button id="img-to-pdf-btn" disabled>Créer le PDF</button>
+  </div>
 
-    <div id="split-file-info"></div>
+  <!-- 4. PDF VERS IMAGES -->
+  <div class="section">
+    <h2>📸 4. PDF vers Images (JPG)</h2>
+    <div class="drop-zone" onclick="document.getElementById('pdf-to-img-file').click()">📁 Choisir un PDF</div>
+    <input type="file" id="pdf-to-img-file" accept="application/pdf" hidden>
+    <div id="pdf-to-img-info" class="info"></div>
+    <button id="pdf-to-img-btn" disabled>Convertir les pages</button>
+    <p class="info">⚠️ <em>Autorise les téléchargements multiples si ton navigateur le demande.</em></p>
+  </div>
 
-    <input type="text" id="pages-input" placeholder="Ex: 1,3,5-7">
-    <button id="split-btn" disabled>Extraire les pages</button>
+  <!-- 5. SIGNATURE -->
+  <div class="section">
+    <h2>✍️ 5. Signer un PDF</h2>
+    <div class="drop-zone" onclick="document.getElementById('sign-file').click()">📁 Choisir un PDF à signer</div>
+    <input type="file" id="sign-file" accept="application/pdf" hidden>
+    <div id="sign-info" class="info"></div>
+    <p>Dessinez votre signature ci-dessous :</p>
+    <canvas id="sig-canvas" width="300" height="150"></canvas>
+    <br>
+    <button class="secondary" onclick="clearSignature()">Effacer la signature</button>
+    <button id="sign-btn" disabled>Ajouter la signature (Page 1)</button>
+  </div>
+
+  <!-- 6. PDF VERS TEXTE -->
+  <div class="section">
+    <h2>📝 6. PDF vers Texte (.txt)</h2>
+    <div class="drop-zone" onclick="document.getElementById('text-file').click()">📁 Choisir un PDF</div>
+    <input type="file" id="text-file" accept="application/pdf" hidden>
+    <div id="text-info" class="info"></div>
+    <button id="text-btn" disabled>Extraire le texte</button>
   </div>
 
   <div id="status"></div>
 
-  <!-- La bibliothèque magique qui manipule les PDF -->
+  <!-- Bibliothèques externes -->
   <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.5/dist/signature_pad.umd.min.js"></script>
 
   <script>
+    // Configuration de pdf.js
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     const { PDFDocument } = PDFLib;
-    let selectedFiles = [];
-    let splitFile = null;
 
-    // ====== FUSION ======
-    const filesInput = document.getElementById('files');
-    const mergeBtn = document.getElementById('merge-btn');
-    const fileList = document.getElementById('file-list');
+    // Variables globales
+    let mergeFiles = [], splitFile = null, imgFiles = [], pdfToImgFile = null, signFile = null, textFile = null;
     const status = document.getElementById('status');
 
-    filesInput.addEventListener('change', (e) => {
-      selectedFiles = Array.from(e.target.files);
-      fileList.innerHTML = selectedFiles
-        .map(f => `<p>✅ ${f.name}</p>`)
-        .join('');
-      mergeBtn.disabled = selectedFiles.length < 2;
+    // Fonction utilitaire de téléchargement
+    function download(data, filename, type) {
+      const blob = data instanceof Uint8Array ? new Blob([data], { type }) : new Blob([data], { type });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = filename; a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function downloadDataURL(dataUrl, filename) {
+      const a = document.createElement('a');
+      a.href = dataUrl; a.download = filename; a.click();
+    }
+
+    function setStatus(msg, isError = false) {
+      status.textContent = msg;
+      status.className = isError ? 'error' : 'success';
+    }
+
+    // ==========================================
+    // 1. FUSION
+    // ==========================================
+    document.getElementById('merge-files').addEventListener('change', (e) => {
+      mergeFiles = Array.from(e.target.files);
+      document.getElementById('merge-list').textContent = mergeFiles.map(f => `✅ ${f.name}`).join(' | ');
+      document.getElementById('merge-btn').disabled = mergeFiles.length < 2;
     });
 
-    mergeBtn.addEventListener('click', async () => {
-      status.textContent = '⏳ Fusion en cours...';
-      mergeBtn.disabled = true;
-
+    document.getElementById('merge-btn').addEventListener('click', async () => {
+      setStatus('⏳ Fusion en cours...');
       try {
         const mergedPdf = await PDFDocument.create();
-
-        for (const file of selectedFiles) {
-          const arrayBuffer = await file.arrayBuffer();
-          const pdf = await PDFDocument.load(arrayBuffer);
+        for (const file of mergeFiles) {
+          const pdf = await PDFDocument.load(await file.arrayBuffer());
           const pages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
           pages.forEach(page => mergedPdf.addPage(page));
         }
-
-        const pdfBytes = await mergedPdf.save();
-        download(pdfBytes, 'fusionne.pdf', 'application/pdf');
-
-        status.textContent = '✅ Fusion réussie !';
-      } catch (error) {
-        status.textContent = '❌ Erreur : ' + error.message;
-        console.error(error);
-      } finally {
-        mergeBtn.disabled = false;
-      }
+        download(await mergedPdf.save(), 'fusionne.pdf', 'application/pdf');
+        setStatus('✅ Fusion réussie !');
+      } catch (err) { setStatus('❌ Erreur: ' + err.message, true); }
     });
 
-    // ====== DECOUPE ======
-    const splitFileInput = document.getElementById('split-file');
-    const splitBtn = document.getElementById('split-btn');
-    const splitFileInfo = document.getElementById('split-file-info');
-
-    splitFileInput.addEventListener('change', async (e) => {
+    // ==========================================
+    // 2. DECOUPE
+    // ==========================================
+    document.getElementById('split-file').addEventListener('change', async (e) => {
       splitFile = e.target.files[0];
       if (!splitFile) return;
-
-      // Lire le PDF pour connaître le nombre de pages
-      const arrayBuffer = await splitFile.arrayBuffer();
-      const pdf = await PDFDocument.load(arrayBuffer);
-      const numPages = pdf.getPageCount();
-
-      splitFileInfo.innerHTML = `<p>✅ ${splitFile.name} (${numPages} pages)</p>`;
-      splitBtn.disabled = false;
+      const pdf = await PDFDocument.load(await splitFile.arrayBuffer());
+      document.getElementById('split-info').textContent = `✅ ${splitFile.name} (${pdf.getPageCount()} pages)`;
+      document.getElementById('split-btn').disabled = false;
     });
 
-    splitBtn.addEventListener('click', async () => {
+    document.getElementById('split-btn').addEventListener('click', async () => {
       const input = document.getElementById('pages-input').value;
-      if (!splitFile || !input) {
-        status.textContent = '❌ Choisis un fichier et indique les pages';
-        return;
-      }
-
-      status.textContent = '⏳ Découpe en cours...';
-      splitBtn.disabled = true;
-
+      if (!splitFile || !input) return setStatus('❌ Choisis un fichier et des pages', true);
+      setStatus('⏳ Découpe en cours...');
       try {
-        const arrayBuffer = await splitFile.arrayBuffer();
-        const pdf = await PDFDocument.load(arrayBuffer);
-        const pageIndices = parsePages(input, pdf.getPageCount());
-
-        if (pageIndices.length === 0) {
-          status.textContent = '❌ Aucune page valide trouvée';
-          splitBtn.disabled = false;
-          return;
-        }
+        const pdf = await PDFDocument.load(await splitFile.arrayBuffer());
+        const maxPages = pdf.getPageCount();
+        const indices = new Set();
+        input.split(',').forEach(part => {
+          part = part.trim();
+          if (part.includes('-')) {
+            const [start, end] = part.split('-').map(Number);
+            for (let i = start; i <= end && i <= maxPages; i++) indices.add(i - 1);
+          } else {
+            const n = Number(part);
+            if (n >= 1 && n <= maxPages) indices.add(n - 1);
+          }
+        });
+        const pageIndices = Array.from(indices).sort((a, b) => a - b);
+        if (pageIndices.length === 0) throw new Error("Aucune page valide");
 
         const newPdf = await PDFDocument.create();
         const pages = await newPdf.copyPages(pdf, pageIndices);
         pages.forEach(page => newPdf.addPage(page));
-
-        const pdfBytes = await newPdf.save();
-        download(pdfBytes, 'extrait.pdf', 'application/pdf');
-
-        status.textContent = '✅ Découpe réussie !';
-      } catch (error) {
-        status.textContent = '❌ Erreur : ' + error.message;
-        console.error(error);
-      } finally {
-        splitBtn.disabled = false;
-      }
+        
+        download(await newPdf.save(), 'extrait.pdf', 'application/pdf');
+        setStatus('✅ Découpe réussie !');
+      } catch (err) { setStatus('❌ Erreur: ' + err.message, true); }
     });
 
-    // Fonction pour parser "1,3,5-7" en [0, 2, 4, 5, 6]
-    function parsePages(input, maxPages) {
-      const indices = new Set();
-      input.split(',').forEach(part => {
-        part = part.trim();
-        if (part.includes('-')) {
-          const [start, end] = part.split('-').map(Number);
-          for (let i = start; i <= end && i <= maxPages; i++) {
-            indices.add(i - 1);
-          }
-        } else {
-          const n = Number(part);
-          if (n >= 1 && n <= maxPages) indices.add(n - 1);
-        }
-      });
-      return Array.from(indices).sort((a, b) => a - b);
-    }
+    // ==========================================
+    // 3. IMAGES VERS PDF
+    // ==========================================
+    document.getElementById('img-files').addEventListener('change', (e) => {
+      imgFiles = Array.from(e.target.files);
+      document.getElementById('img-list').textContent = imgFiles.map(f => `✅ ${f.name}`).join(' | ');
+      document.getElementById('img-to-pdf-btn').disabled = imgFiles.length === 0;
+    });
 
-    // Fonction utilitaire pour télécharger
-    function download(data, filename, type) {
-      const blob = new Blob([data], { type: type });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      a.click();
-      URL.revokeObjectURL(url);
-    }
+    document.getElementById('img-to-pdf-btn').addEventListener('click', async () => {
+      setStatus('⏳ Création du PDF...');
+      try {
+        const pdf = await PDFDocument.create();
+        for (const file of imgFiles) {
+          const bytes = await file.arrayBuffer();
+          const image = file.type === 'image/png' ? await pdf.embedPng(bytes) : await pdf.embedJpg(bytes);
+          const page = pdf.addPage([image.width, image.height]);
+          page.drawImage(image, { x: 0, y: 0, width: image.width, height: image.height });
+        }
+        download(await pdf.save(), 'images.pdf', 'application/pdf');
+        setStatus('✅ PDF créé avec succès !');
+      } catch (err) { setStatus('❌ Erreur: ' + err.message, true); }
+    });
+
+    // ==========================================
+    // 4. PDF VERS IMAGES
+    // ==========================================
+    document.getElementById('pdf-to-img-file').addEventListener('change', async (e) => {
+      pdfToImgFile = e.target.files[0];
+      if (!pdfToImgFile) return;
+      const pdf = await pdfjsLib.getDocument({ data: await pdfToImgFile.arrayBuffer() }).promise;
+      document.getElementById('pdf-to-img-info').textContent = `✅ ${pdfToImgFile.name} (${pdf.numPages} pages)`;
+      document.getElementById('pdf-to-img-btn').disabled = false;
+    });
+
+    document.getElementById('pdf-to-img-btn').addEventListener('click', async () => {
+      setStatus('⏳ Conversion en cours... (autorise les téléchargements multiples)');
+      try {
+        const pdf = await pdfjsLib.getDocument({ data: await pdfToImgFile.arrayBuffer() }).promise;
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const viewport = page.getViewport({ scale: 1.5 });
+          const canvas = document.createElement('canvas');
+          const context = canvas.getContext('2d');
+          canvas.height = viewport.height; canvas.width = viewport.width;
+          await page.render({ canvasContext: context, viewport }).promise;
+          
+          downloadDataURL(canvas.toDataURL('image/jpeg'), `page_${i}.jpg`);
+          await new Promise(r => setTimeout(r, 400)); // Petite pause pour éviter le blocage du navigateur
+        }
+        setStatus('✅ Toutes les pages ont été converties !');
+      } catch (err) { setStatus('❌ Erreur: ' + err.message, true); }
+    });
+
+    // ==========================================
+    // 5. SIGNATURE
+    // ==========================================
+    const sigCanvas = document.getElementById('sig-canvas');
+    const signaturePad = new SignaturePad(sigCanvas, { backgroundColor: 'rgb(255, 255, 255)' });
+    
+    function clearSignature() { signaturePad.clear(); }
+
+    document.getElementById('sign-file').addEventListener('change', async (e) => {
+      signFile = e.target.files[0];
+      if (!signFile) return;
+      const pdf = await PDFDocument.load(await signFile.arrayBuffer());
+      document.getElementById('sign-info').textContent = `✅ ${signFile.name} (${pdf.getPageCount()} pages)`;
+      document.getElementById('sign-btn').disabled = false;
+    });
+
+    document.getElementById('sign-btn').addEventListener('click', async () => {
+      if (signaturePad.isEmpty()) return setStatus('❌ Veuillez dessiner une signature', true);
+      setStatus('⏳ Ajout de la signature...');
+      try {
+        const sigDataUrl = signaturePad.toDataURL('image/png');
+        const pdf = await PDFDocument.load(await signFile.arrayBuffer());
+        const pages = pdf.getPages();
+        const page = pages[0]; // On signe la page 1
+        const sigImage = await pdf.embedPng(sigDataUrl);
+        const { width, height } = page.getSize();
+        
+        // Positionne la signature en bas à droite
+        page.drawImage(sigImage, { x: width - 160, y: 40, width: 120, height: 60 });
+        
+        download(await pdf.save(), 'document_signe.pdf', 'application/pdf');
+        setStatus('✅ Document signé et téléchargé !');
+        clearSignature();
+      } catch (err) { setStatus('❌ Erreur: ' + err.message, true); }
+    });
+
+    // ==========================================
+    // 6. PDF VERS TEXTE
+    // ==========================================
+    document.getElementById('text-file').addEventListener('change', async (e) => {
+      textFile = e.target.files[0];
+      if (!textFile) return;
+      const pdf = await pdfjsLib.getDocument({ data: await textFile.arrayBuffer() }).promise;
+      document.getElementById('text-info').textContent = `✅ ${textFile.name} (${pdf.numPages} pages)`;
+      document.getElementById('text-btn').disabled = false;
+    });
+
+    document.getElementById('text-btn').addEventListener('click', async () => {
+      setStatus('⏳ Extraction du texte...');
+      try {
+        const pdf = await pdfjsLib.getDocument({ data: await textFile.arrayBuffer() }).promise;
+        let fullText = '';
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const textContent = await page.getTextContent();
+          const pageText = textContent.items.map(item => item.str).join(' ');
+          fullText += `--- Page ${i} ---\n${pageText}\n\n`;
+        }
+        download(new TextEncoder().encode(fullText), 'texte_extrait.txt', 'text/plain');
+        setStatus('✅ Texte extrait avec succès !');
+      } catch (err) { setStatus('❌ Erreur: ' + err.message, true); }
+    });
   </script>
 </body>
 </html>
