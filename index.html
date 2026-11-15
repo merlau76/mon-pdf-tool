@@ -12,6 +12,7 @@
       text-align: center;
     }
     h1 { color: #2563eb; }
+    h2 { color: #059669; margin-top: 40px; }
     .drop-zone {
       border: 3px dashed #2563eb;
       padding: 40px;
@@ -28,24 +29,60 @@
       font-size: 16px;
       border-radius: 6px;
       cursor: pointer;
+      margin: 10px 5px;
     }
     button:hover { background: #1d4ed8; }
     button:disabled { background: #9ca3af; cursor: not-allowed; }
+    input[type="text"] {
+      padding: 10px;
+      font-size: 14px;
+      border: 2px solid #d1d5db;
+      border-radius: 6px;
+      width: 200px;
+    }
     #status { margin-top: 20px; color: #059669; font-weight: bold; }
+    .section {
+      border: 1px solid #e5e7eb;
+      padding: 20px;
+      margin: 20px 0;
+      border-radius: 10px;
+    }
   </style>
 </head>
 <body>
-  <h1>🔗 Fusionner des PDF</h1>
-  <p>Choisis plusieurs fichiers PDF, puis clique sur "Fusionner"</p>
+  <h1>📄 Mon outil PDF</h1>
 
-  <div class="drop-zone" onclick="document.getElementById('files').click()">
-    📁 Clique ici pour choisir des PDF
-    <input type="file" id="files" accept="application/pdf" multiple hidden>
+  <!-- SECTION FUSION -->
+  <div class="section">
+    <h2>🔗 Fusionner des PDF</h2>
+    <p>Choisis plusieurs fichiers PDF, puis clique sur "Fusionner"</p>
+
+    <div class="drop-zone" onclick="document.getElementById('files').click()">
+      📁 Clique ici pour choisir des PDF
+      <input type="file" id="files" accept="application/pdf" multiple hidden>
+    </div>
+
+    <div id="file-list"></div>
+
+    <button id="merge-btn" disabled>Fusionner les PDF</button>
   </div>
 
-  <div id="file-list"></div>
+  <!-- SECTION DECOUPE -->
+  <div class="section">
+    <h2>✂️ Découper un PDF</h2>
+    <p>Choisis un PDF, puis indique les pages à extraire</p>
 
-  <button id="merge-btn" disabled>Fusionner les PDF</button>
+    <div class="drop-zone" onclick="document.getElementById('split-file').click()">
+      📁 Clique ici pour choisir un PDF
+      <input type="file" id="split-file" accept="application/pdf" hidden>
+    </div>
+
+    <div id="split-file-info"></div>
+
+    <input type="text" id="pages-input" placeholder="Ex: 1,3,5-7">
+    <button id="split-btn" disabled>Extraire les pages</button>
+  </div>
+
   <div id="status"></div>
 
   <!-- La bibliothèque magique qui manipule les PDF -->
@@ -54,13 +91,14 @@
   <script>
     const { PDFDocument } = PDFLib;
     let selectedFiles = [];
+    let splitFile = null;
 
+    // ====== FUSION ======
     const filesInput = document.getElementById('files');
     const mergeBtn = document.getElementById('merge-btn');
     const fileList = document.getElementById('file-list');
     const status = document.getElementById('status');
 
-    // Quand l'utilisateur choisit des fichiers
     filesInput.addEventListener('change', (e) => {
       selectedFiles = Array.from(e.target.files);
       fileList.innerHTML = selectedFiles
@@ -69,16 +107,13 @@
       mergeBtn.disabled = selectedFiles.length < 2;
     });
 
-    // Quand on clique sur "Fusionner"
     mergeBtn.addEventListener('click', async () => {
       status.textContent = '⏳ Fusion en cours...';
       mergeBtn.disabled = true;
 
       try {
-        // 1. Créer un nouveau PDF vide
         const mergedPdf = await PDFDocument.create();
 
-        // 2. Pour chaque fichier, copier ses pages
         for (const file of selectedFiles) {
           const arrayBuffer = await file.arrayBuffer();
           const pdf = await PDFDocument.load(arrayBuffer);
@@ -86,7 +121,6 @@
           pages.forEach(page => mergedPdf.addPage(page));
         }
 
-        // 3. Sauvegarder et télécharger
         const pdfBytes = await mergedPdf.save();
         download(pdfBytes, 'fusionne.pdf', 'application/pdf');
 
@@ -99,7 +133,80 @@
       }
     });
 
-    // Fonction utilitaire pour télécharger un fichier
+    // ====== DECOUPE ======
+    const splitFileInput = document.getElementById('split-file');
+    const splitBtn = document.getElementById('split-btn');
+    const splitFileInfo = document.getElementById('split-file-info');
+
+    splitFileInput.addEventListener('change', async (e) => {
+      splitFile = e.target.files[0];
+      if (!splitFile) return;
+
+      // Lire le PDF pour connaître le nombre de pages
+      const arrayBuffer = await splitFile.arrayBuffer();
+      const pdf = await PDFDocument.load(arrayBuffer);
+      const numPages = pdf.getPageCount();
+
+      splitFileInfo.innerHTML = `<p>✅ ${splitFile.name} (${numPages} pages)</p>`;
+      splitBtn.disabled = false;
+    });
+
+    splitBtn.addEventListener('click', async () => {
+      const input = document.getElementById('pages-input').value;
+      if (!splitFile || !input) {
+        status.textContent = '❌ Choisis un fichier et indique les pages';
+        return;
+      }
+
+      status.textContent = '⏳ Découpe en cours...';
+      splitBtn.disabled = true;
+
+      try {
+        const arrayBuffer = await splitFile.arrayBuffer();
+        const pdf = await PDFDocument.load(arrayBuffer);
+        const pageIndices = parsePages(input, pdf.getPageCount());
+
+        if (pageIndices.length === 0) {
+          status.textContent = '❌ Aucune page valide trouvée';
+          splitBtn.disabled = false;
+          return;
+        }
+
+        const newPdf = await PDFDocument.create();
+        const pages = await newPdf.copyPages(pdf, pageIndices);
+        pages.forEach(page => newPdf.addPage(page));
+
+        const pdfBytes = await newPdf.save();
+        download(pdfBytes, 'extrait.pdf', 'application/pdf');
+
+        status.textContent = '✅ Découpe réussie !';
+      } catch (error) {
+        status.textContent = '❌ Erreur : ' + error.message;
+        console.error(error);
+      } finally {
+        splitBtn.disabled = false;
+      }
+    });
+
+    // Fonction pour parser "1,3,5-7" en [0, 2, 4, 5, 6]
+    function parsePages(input, maxPages) {
+      const indices = new Set();
+      input.split(',').forEach(part => {
+        part = part.trim();
+        if (part.includes('-')) {
+          const [start, end] = part.split('-').map(Number);
+          for (let i = start; i <= end && i <= maxPages; i++) {
+            indices.add(i - 1);
+          }
+        } else {
+          const n = Number(part);
+          if (n >= 1 && n <= maxPages) indices.add(n - 1);
+        }
+      });
+      return Array.from(indices).sort((a, b) => a - b);
+    }
+
+    // Fonction utilitaire pour télécharger
     function download(data, filename, type) {
       const blob = new Blob([data], { type: type });
       const url = URL.createObjectURL(blob);
