@@ -69,6 +69,14 @@
       touch-action: none;
     }
     
+    /* ✅ CORRECTION CRUCIALE : forcer le fond transparent sur TOUT ce que Fabric.js crée */
+    .canvas-container {
+      background: transparent !important;
+    }
+    .upper-canvas {
+      background: transparent !important;
+    }
+    
     .info { font-size: 0.9rem; color: #94a3b8; margin-top: 8px; }
     .sig-options, .rotate-options, .watermark-options, .compress-options { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 15px; }
     .sig-options label, .rotate-options label, .watermark-options label, .compress-options label { font-weight: 500; color: #cbd5e1; }
@@ -1120,7 +1128,7 @@
       await page.render({ canvasContext: ctx, viewport }).promise;
       const dataURL = tempCanvas.toDataURL();
 
-      // 2. ✅ IMPORTANT : Définir les dimensions AVANT de créer Fabric
+      // 2. Définir les dimensions AVANT de créer Fabric
       const canvasEl = document.getElementById('annotate-canvas');
       canvasEl.width = viewport.width;
       canvasEl.height = viewport.height;
@@ -1132,7 +1140,17 @@
         selection: false
       });
 
-      // 4. Charger l'image du PDF comme fond
+      // 4. ✅ CORRECTION : Forcer le fond transparent sur le upper-canvas
+      const upperCanvas = document.querySelector('.upper-canvas');
+      if (upperCanvas) {
+        upperCanvas.style.background = 'transparent';
+      }
+      const canvasContainer = document.querySelector('.canvas-container');
+      if (canvasContainer) {
+        canvasContainer.style.background = 'transparent';
+      }
+
+      // 5. Charger l'image du PDF comme fond
       fabric.Image.fromURL(dataURL, (img) => {
         fabricCanvas.setBackgroundImage(img, fabricCanvas.renderAll.bind(fabricCanvas), {
           scaleX: viewport.width / img.width,
@@ -1142,11 +1160,11 @@
         });
       });
 
-      // 5. Configurer le crayon
+      // 6. Configurer le crayon
       fabricCanvas.freeDrawingBrush.color = currentColor;
       fabricCanvas.freeDrawingBrush.width = currentThickness;
 
-      // 6. Recharger les annotations
+      // 7. Recharger les annotations
       if (pageAnnotationsData[pageNum] && pageAnnotationsData[pageNum].length > 0) {
         setTimeout(() => {
           fabricCanvas.loadFromJSON(pageAnnotationsData[pageNum], () => {
