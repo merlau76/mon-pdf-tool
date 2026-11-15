@@ -59,8 +59,33 @@
     .annotate-workspace { margin-top: 20px; }
     .annotate-toolbar { display: flex; flex-wrap: wrap; gap: 10px; margin: 15px 0; padding: 15px; background: #0f172a; border-radius: 10px; align-items: center; }
     .annotate-toolbar .separator { width: 1px; height: 30px; background: #475569; margin: 0 5px; }
-    .annotate-canvas-container { position: relative; display: inline-block; margin: 20px auto; border: 2px solid #475569; border-radius: 8px; overflow: hidden; background: white; max-width: 100%; overflow-x: auto; }
-    .annotate-canvas-container canvas { display: block; border: none; margin: 0; }
+    
+    /* ✅ NOUVEAU : Conteneur pour superposer les deux canvas */
+    .annotate-canvas-container {
+      position: relative;
+      display: inline-block;
+      margin: 20px auto;
+      border: 2px solid #475569;
+      border-radius: 8px;
+      overflow: hidden;
+      background: white;
+      max-width: 100%;
+      overflow-x: auto;
+    }
+    #pdf-canvas {
+      display: block;
+      border: none;
+      margin: 0;
+    }
+    #annotate-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      border: none;
+      margin: 0;
+      background: transparent !important;
+    }
+    
     .page-nav { display: flex; align-items: center; justify-content: center; gap: 15px; margin: 15px 0; flex-wrap: wrap; }
     .page-nav button { padding: 8px 16px; font-size: 14px; }
     .page-info { font-weight: 600; color: #60a5fa; }
@@ -396,6 +421,7 @@
         </div>
         <div style="text-align: center;">
           <div class="annotate-canvas-container">
+            <canvas id="pdf-canvas"></canvas>
             <canvas id="annotate-canvas"></canvas>
           </div>
         </div>
@@ -1016,7 +1042,9 @@
       finally { document.getElementById('xlsx-to-csv-btn').disabled = false; }
     });
 
-    // ANNOTATION
+    // ============================================================
+    // ANNOTATION - VERSION CORRIGÉE AVEC DEUX CANVAS SUPERPOSÉS
+    // ============================================================
     let fabricCanvas = null;
     let currentAnnotatePage = 1;
     let totalAnnotatePages = 1;
@@ -1057,12 +1085,12 @@
         document.getElementById('annotate-workspace').style.display = 'block';
         updateCounter('annotate-counter', `🎨 Prêt à annoter ${totalAnnotatePages} page${totalAnnotatePages > 1 ? 's' : ''}`);
 
-        const canvasEl = document.getElementById('annotate-canvas');
+        // Initialiser Fabric.js sur le canvas du haut (transparent)
         if (fabricCanvas) fabricCanvas.dispose();
         fabricCanvas = new fabric.Canvas('annotate-canvas', {
           isDrawingMode: false,
           selection: true,
-          backgroundColor: null
+          backgroundColor: null  // ✅ Fond transparent
         });
 
         fabricCanvas.freeDrawingBrush.width = parseInt(strokeSlider.value);
@@ -1073,6 +1101,7 @@
       } catch (err) { setStatus('❌ Erreur: ' + err.message, true); console.error(err); }
     });
 
+    // ✅ NOUVELLE VERSION : utilise deux canvas séparés
     async function loadAnnotatePage(pageNum) {
       currentAnnotatePage = pageNum;
       document.getElementById('current-page').textContent = pageNum;
@@ -1080,55 +1109,35 @@
       const page = await annotatePdf.getPage(pageNum);
       const viewport = page.getViewport({ scale: 1.5 });
 
-      const tempCanvas = document.createElement('canvas');
-      tempCanvas.width = viewport.width;
-      tempCanvas.height = viewport.height;
-      const context = tempCanvas.getContext('2d');
+      // 1. Rendre le PDF sur le canvas HTML du bas
+      const pdfCanvas = document.getElementById('pdf-canvas');
+      pdfCanvas.width = viewport.width;
+      pdfCanvas.height = viewport.height;
+      const ctx = pdfCanvas.getContext('2d');
       
-      context.fillStyle = 'white';
-      context.fillRect(0, 0, viewport.width, viewport.height);
+      // Fond blanc
+      ctx.fillStyle = 'white';
+      ctx.fillRect(0, 0, viewport.width, viewport.height);
       
-      await page.render({ canvasContext: context, viewport }).promise;
-      const dataURL = tempCanvas.toDataURL();
+      await page.render({ canvasContext: ctx, viewport }).promise;
 
+      // 2. Configurer le canvas Fabric.js du haut (transparent)
       fabricCanvas.clear();
       fabricCanvas.setWidth(viewport.width);
       fabricCanvas.setHeight(viewport.height);
+      fabricCanvas.renderAll();
 
-      const imgElement = new Image();
-      await new Promise((resolve, reject) => {
-        imgElement.onload = resolve;
-        imgElement.onerror = reject;
-        imgElement.src = dataURL;
-      });
-      
-      const fabricBgImage = new fabric.Image(imgElement, {
-        selectable: false,
-        evented: false,
-        hasControls: false,
-        hasBorders: false,
-        lockMovementX: true,
-        lockMovementY: true,
-        lockRotation: true,
-        lockScalingX: true,
-        lockScalingY: true,
-        _isBackground: true
-      });
-      
-      fabricCanvas.add(fabricBgImage);
-      fabricCanvas.sendToBack(fabricBgImage);
-
+      // 3. Recharger les annotations de cette page si elles existent
       if (pageAnnotationsData[pageNum] && pageAnnotationsData[pageNum].length > 0) {
         await new Promise((resolve) => {
           fabricCanvas.loadFromJSON(pageAnnotationsData[pageNum], () => {
-            fabricCanvas.add(fabricBgImage);
-            fabricCanvas.sendToBack(fabricBgImage);
             fabricCanvas.renderAll();
             resolve();
           });
         });
       }
 
+      // 4. Appliquer l'outil courant
       setTool(currentTool);
     }
 
@@ -1331,7 +1340,7 @@
     });
 
     function saveCurrentPageAnnotations() {
-      const objects = fabricCanvas.getObjects().filter(obj => !obj._isBackground);
+      const objects = fabricCanvas.getObjects().slice();
       const json = objects.map(obj => obj.toJSON());
       pageAnnotationsData[currentAnnotatePage] = json;
     }
@@ -1354,6 +1363,7 @@
           const page = pdfDoc.getPage(pageNum - 1);
           const { width, height } = page.getSize();
 
+          // Créer un canvas temporaire pour rendre les annotations
           const annotWidth = width * 1.5;
           const annotHeight = height * 1.5;
 
