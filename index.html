@@ -22,6 +22,8 @@
     .card.watermark { border-top: 4px solid #ec4899; } .card.watermark h2 { color: #f472b6; }
     .card.compress { border-top: 4px solid #84cc16; } .card.compress h2 { color: #a3e635; }
     .card.ocr { border-top: 4px solid #14b8a6; } .card.ocr h2 { color: #2dd4bf; }
+    .card.convert { border-top: 4px solid #f59e0b; grid-column: 1 / -1; }
+    .card.convert h2 { color: #fbbf24; }
     .card.annotate { border-top: 4px solid #f97316; grid-column: 1 / -1; }
     .card.annotate h2 { color: #fb923c; }
     .drop-zone { border: 2px dashed #475569; padding: 25px; margin: 15px 0; border-radius: 10px; cursor: pointer; text-align: center; transition: all 0.2s; background: #0f172a; }
@@ -67,6 +69,9 @@
     .ocr-result { background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 15px; margin: 15px 0; max-height: 300px; overflow-y: auto; font-family: 'Courier New', monospace; font-size: 0.9rem; white-space: pre-wrap; color: #e2e8f0; }
     .progress-bar { width: 100%; height: 8px; background: #334155; border-radius: 4px; overflow: hidden; margin: 10px 0; }
     .progress-fill { height: 100%; background: linear-gradient(90deg, #10b981, #34d399); transition: width 0.3s ease; }
+    .convert-options { display: flex; flex-wrap: wrap; gap: 15px; margin: 20px 0; }
+    .convert-option { flex: 1; min-width: 200px; background: #0f172a; padding: 15px; border-radius: 10px; border: 2px solid #334155; }
+    .convert-option h3 { color: #fbbf24; margin-bottom: 10px; font-size: 1.1rem; }
     @media (max-width: 768px) { .grid { grid-template-columns: 1fr; } h1 { font-size: 1.8rem; } .annotate-toolbar { justify-content: center; } }
   </style>
 </head>
@@ -279,6 +284,94 @@
       <button id="ocr-download-btn" style="display: none; margin-top: 10px;">💾 Télécharger le texte</button>
     </div>
 
+    <!-- CONVERSION (NOUVEAU) -->
+    <div class="card convert">
+      <h2>🔄 Conversion de documents</h2>
+      <p class="info">Convertir entre DOCX, XLSX, CSV et PDF</p>
+      
+      <div class="convert-options">
+        <div class="convert-option">
+          <h3>📄 DOCX → PDF</h3>
+          <div class="drop-zone" onclick="document.getElementById('docx-to-pdf-file').click()" style="padding: 15px;">📁 Choisir un DOCX</div>
+          <input type="file" id="docx-to-pdf-file" accept=".docx" hidden>
+          <div id="docx-to-pdf-info" class="info"></div>
+          <div class="filename-row">
+            <label for="docx-to-pdf-filename">📝 Nom :</label>
+            <input type="text" id="docx-to-pdf-filename" placeholder="document">
+            <span class="ext">.pdf</span>
+          </div>
+          <button id="docx-to-pdf-btn" disabled>Convertir en PDF</button>
+        </div>
+
+        <div class="convert-option">
+          <h3>📄 PDF → DOCX</h3>
+          <div class="drop-zone" onclick="document.getElementById('pdf-to-docx-file').click()" style="padding: 15px;">📁 Choisir un PDF</div>
+          <input type="file" id="pdf-to-docx-file" accept="application/pdf" hidden>
+          <div id="pdf-to-docx-info" class="info"></div>
+          <div class="filename-row">
+            <label for="pdf-to-docx-filename">📝 Nom :</label>
+            <input type="text" id="pdf-to-docx-filename" placeholder="document">
+            <span class="ext">.docx</span>
+          </div>
+          <button id="pdf-to-docx-btn" disabled>Convertir en DOCX</button>
+          <p class="info">⚠️ Perte de mise en forme</p>
+        </div>
+
+        <div class="convert-option">
+          <h3>📊 XLSX → PDF</h3>
+          <div class="drop-zone" onclick="document.getElementById('xlsx-to-pdf-file').click()" style="padding: 15px;">📁 Choisir un XLSX</div>
+          <input type="file" id="xlsx-to-pdf-file" accept=".xlsx" hidden>
+          <div id="xlsx-to-pdf-info" class="info"></div>
+          <div class="filename-row">
+            <label for="xlsx-to-pdf-filename">📝 Nom :</label>
+            <input type="text" id="xlsx-to-pdf-filename" placeholder="tableau">
+            <span class="ext">.pdf</span>
+          </div>
+          <button id="xlsx-to-pdf-btn" disabled>Convertir en PDF</button>
+        </div>
+
+        <div class="convert-option">
+          <h3>📊 PDF → XLSX</h3>
+          <div class="drop-zone" onclick="document.getElementById('pdf-to-xlsx-file').click()" style="padding: 15px;">📁 Choisir un PDF</div>
+          <input type="file" id="pdf-to-xlsx-file" accept="application/pdf" hidden>
+          <div id="pdf-to-xlsx-info" class="info"></div>
+          <div class="filename-row">
+            <label for="pdf-to-xlsx-filename">📝 Nom :</label>
+            <input type="text" id="pdf-to-xlsx-filename" placeholder="tableau">
+            <span class="ext">.xlsx</span>
+          </div>
+          <button id="pdf-to-xlsx-btn" disabled>Convertir en XLSX</button>
+          <p class="info">⚠️ Très limité</p>
+        </div>
+
+        <div class="convert-option">
+          <h3>📋 CSV → XLSX</h3>
+          <div class="drop-zone" onclick="document.getElementById('csv-to-xlsx-file').click()" style="padding: 15px;">📁 Choisir un CSV</div>
+          <input type="file" id="csv-to-xlsx-file" accept=".csv" hidden>
+          <div id="csv-to-xlsx-info" class="info"></div>
+          <div class="filename-row">
+            <label for="csv-to-xlsx-filename">📝 Nom :</label>
+            <input type="text" id="csv-to-xlsx-filename" placeholder="tableau">
+            <span class="ext">.xlsx</span>
+          </div>
+          <button id="csv-to-xlsx-btn" disabled>Convertir en XLSX</button>
+        </div>
+
+        <div class="convert-option">
+          <h3>📋 XLSX → CSV</h3>
+          <div class="drop-zone" onclick="document.getElementById('xlsx-to-csv-file').click()" style="padding: 15px;">📁 Choisir un XLSX</div>
+          <input type="file" id="xlsx-to-csv-file" accept=".xlsx" hidden>
+          <div id="xlsx-to-csv-info" class="info"></div>
+          <div class="filename-row">
+            <label for="xlsx-to-csv-filename">📝 Nom :</label>
+            <input type="text" id="xlsx-to-csv-filename" placeholder="tableau">
+            <span class="ext">.csv</span>
+          </div>
+          <button id="xlsx-to-csv-btn" disabled>Convertir en CSV</button>
+        </div>
+      </div>
+    </div>
+
     <!-- ANNOTATION -->
     <div class="card annotate">
       <h2>🎨 Annotation Interactive</h2>
@@ -340,10 +433,16 @@
   <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.5/dist/signature_pad.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
   <script>
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     const { PDFDocument, degrees, rgb, StandardFonts } = PDFLib;
+    const { jsPDF } = window.jspdf;
 
     let mergeFiles = [], splitFile = null, imgFiles = [], pdfToImgFile = null, signFile = null, signPdf = null;
     let rotateFile = null, rotatePdf = null, watermarkFile = null, watermarkPdf = null;
@@ -750,19 +849,226 @@
       download(new TextEncoder().encode(ocrResultText), 'texte_ocr.txt', 'text/plain');
     });
 
-    // ============================================================
-    // ===== ANNOTATION INTERACTIVE (CODE COMPLET) =====
-    // ============================================================
+    // ===== CONVERSION =====
+    // DOCX → PDF
+    document.getElementById('docx-to-pdf-file').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      document.getElementById('docx-to-pdf-info').textContent = `✅ ${file.name}`;
+      document.getElementById('docx-to-pdf-btn').disabled = false;
+      document.getElementById('docx-to-pdf-btn').dataset.file = file.name;
+    });
+    document.getElementById('docx-to-pdf-btn').addEventListener('click', async () => {
+      const fileInput = document.getElementById('docx-to-pdf-file');
+      const file = fileInput.files[0];
+      if (!file) return setStatus('❌ Choisis un fichier', true);
+      setStatus('⏳ Conversion en cours...');
+      document.getElementById('docx-to-pdf-btn').disabled = true;
+      try {
+        const arrayBuffer = await file.arrayBuffer();
+        const result = await mammoth.convertToHtml({ arrayBuffer });
+        const html = result.value;
+        
+        const doc = new jsPDF();
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = html;
+        tempDiv.style.width = '180mm';
+        tempDiv.style.padding = '10mm';
+        tempDiv.style.fontFamily = 'Arial';
+        tempDiv.style.fontSize = '12pt';
+        document.body.appendChild(tempDiv);
+        
+        const canvas = await html2canvas(tempDiv, { scale: 2 });
+        const imgData = canvas.toDataURL('image/jpeg', 0.95);
+        
+        const imgWidth = 190;
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        
+        doc.addImage(imgData, 'JPEG', 10, 10, imgWidth, imgHeight);
+        
+        const filename = getFilename('docx-to-pdf-filename', 'document') + '.pdf';
+        doc.save(filename);
+        
+        document.body.removeChild(tempDiv);
+        setStatus('✅ Conversion réussie !');
+      } catch (err) { setStatus('❌ Erreur: ' + err.message, true); console.error(err); }
+      finally { document.getElementById('docx-to-pdf-btn').disabled = false; }
+    });
+
+    // PDF → DOCX
+    document.getElementById('pdf-to-docx-file').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      document.getElementById('pdf-to-docx-info').textContent = `✅ ${file.name}`;
+      document.getElementById('pdf-to-docx-btn').disabled = false;
+    });
+    document.getElementById('pdf-to-docx-btn').addEventListener('click', async () => {
+      const file = document.getElementById('pdf-to-docx-file').files[0];
+      if (!file) return setStatus('❌ Choisis un fichier', true);
+      setStatus('⏳ Extraction du texte...');
+      document.getElementById('pdf-to-docx-btn').disabled = true;
+      try {
+        const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
+        let fullText = '';
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const textContent = await page.getTextContent();
+          const pageText = textContent.items.map(item => item.str).join(' ');
+          fullText += pageText + '\n\n';
+        }
+        
+        const doc = new docx.Document({
+          sections: [{
+            children: [
+              new docx.Paragraph({
+                children: [new docx.TextRun(fullText)]
+              })
+            ]
+          }]
+        });
+        
+        const blob = await docx.Packer.toBlob(doc);
+        const filename = getFilename('pdf-to-docx-filename', 'document') + '.docx';
+        download(blob, filename, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+        setStatus('✅ Conversion réussie ! (mise en forme basique)');
+      } catch (err) { setStatus('❌ Erreur: ' + err.message, true); }
+      finally { document.getElementById('pdf-to-docx-btn').disabled = false; }
+    });
+
+    // XLSX → PDF
+    document.getElementById('xlsx-to-pdf-file').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      document.getElementById('xlsx-to-pdf-info').textContent = `✅ ${file.name}`;
+      document.getElementById('xlsx-to-pdf-btn').disabled = false;
+    });
+    document.getElementById('xlsx-to-pdf-btn').addEventListener('click', async () => {
+      const file = document.getElementById('xlsx-to-pdf-file').files[0];
+      if (!file) return setStatus('❌ Choisis un fichier', true);
+      setStatus('⏳ Conversion en cours...');
+      document.getElementById('xlsx-to-pdf-btn').disabled = true;
+      try {
+        const data = await file.arrayBuffer();
+        const workbook = XLSX.read(data, { type: 'array' });
+        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+        const html = XLSX.utils.sheet_to_html(firstSheet);
+        
+        const doc = new jsPDF();
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = html;
+        tempDiv.style.width = '180mm';
+        tempDiv.style.padding = '10mm';
+        tempDiv.style.fontFamily = 'Arial';
+        tempDiv.style.fontSize = '10pt';
+        document.body.appendChild(tempDiv);
+        
+        const canvas = await html2canvas(tempDiv, { scale: 2 });
+        const imgData = canvas.toDataURL('image/jpeg', 0.95);
+        
+        const imgWidth = 190;
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        
+        doc.addImage(imgData, 'JPEG', 10, 10, imgWidth, imgHeight);
+        
+        const filename = getFilename('xlsx-to-pdf-filename', 'tableau') + '.pdf';
+        doc.save(filename);
+        
+        document.body.removeChild(tempDiv);
+        setStatus('✅ Conversion réussie !');
+      } catch (err) { setStatus('❌ Erreur: ' + err.message, true); console.error(err); }
+      finally { document.getElementById('xlsx-to-pdf-btn').disabled = false; }
+    });
+
+    // PDF → XLSX
+    document.getElementById('pdf-to-xlsx-file').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      document.getElementById('pdf-to-xlsx-info').textContent = `✅ ${file.name}`;
+      document.getElementById('pdf-to-xlsx-btn').disabled = false;
+    });
+    document.getElementById('pdf-to-xlsx-btn').addEventListener('click', async () => {
+      const file = document.getElementById('pdf-to-xlsx-file').files[0];
+      if (!file) return setStatus('❌ Choisis un fichier', true);
+      setStatus('⏳ Extraction du texte...');
+      document.getElementById('pdf-to-xlsx-btn').disabled = true;
+      try {
+        const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
+        const data = [];
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const textContent = await page.getTextContent();
+          const pageText = textContent.items.map(item => item.str).join(' ');
+          data.push([`Page ${i}`, pageText]);
+        }
+        
+        const ws = XLSX.utils.aoa_to_sheet(data);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Feuille1");
+        
+        const filename = getFilename('pdf-to-xlsx-filename', 'tableau') + '.xlsx';
+        XLSX.writeFile(wb, filename);
+        setStatus('✅ Conversion réussie ! (texte brut uniquement)');
+      } catch (err) { setStatus('❌ Erreur: ' + err.message, true); }
+      finally { document.getElementById('pdf-to-xlsx-btn').disabled = false; }
+    });
+
+    // CSV → XLSX
+    document.getElementById('csv-to-xlsx-file').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      document.getElementById('csv-to-xlsx-info').textContent = `✅ ${file.name}`;
+      document.getElementById('csv-to-xlsx-btn').disabled = false;
+    });
+    document.getElementById('csv-to-xlsx-btn').addEventListener('click', async () => {
+      const file = document.getElementById('csv-to-xlsx-file').files[0];
+      if (!file) return setStatus('❌ Choisis un fichier', true);
+      setStatus('⏳ Conversion en cours...');
+      document.getElementById('csv-to-xlsx-btn').disabled = true;
+      try {
+        const data = await file.arrayBuffer();
+        const workbook = XLSX.read(data, { type: 'array' });
+        const filename = getFilename('csv-to-xlsx-filename', 'tableau') + '.xlsx';
+        XLSX.writeFile(workbook, filename);
+        setStatus('✅ Conversion réussie !');
+      } catch (err) { setStatus('❌ Erreur: ' + err.message, true); }
+      finally { document.getElementById('csv-to-xlsx-btn').disabled = false; }
+    });
+
+    // XLSX → CSV
+    document.getElementById('xlsx-to-csv-file').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      document.getElementById('xlsx-to-csv-info').textContent = `✅ ${file.name}`;
+      document.getElementById('xlsx-to-csv-btn').disabled = false;
+    });
+    document.getElementById('xlsx-to-csv-btn').addEventListener('click', async () => {
+      const file = document.getElementById('xlsx-to-csv-file').files[0];
+      if (!file) return setStatus('❌ Choisis un fichier', true);
+      setStatus('⏳ Conversion en cours...');
+      document.getElementById('xlsx-to-csv-btn').disabled = true;
+      try {
+        const data = await file.arrayBuffer();
+        const workbook = XLSX.read(data, { type: 'array' });
+        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+        const csv = XLSX.utils.sheet_to_csv(firstSheet);
+        
+        const filename = getFilename('xlsx-to-csv-filename', 'tableau') + '.csv';
+        download(new TextEncoder().encode(csv), filename, 'text/csv');
+        setStatus('✅ Conversion réussie !');
+      } catch (err) { setStatus('❌ Erreur: ' + err.message, true); }
+      finally { document.getElementById('xlsx-to-csv-btn').disabled = false; }
+    });
+
+    // ===== ANNOTATION =====
     let fabricCanvas = null;
     let currentAnnotatePage = 1;
     let totalAnnotatePages = 1;
-    let pageAnnotationsData = {}; // Stocke les annotations JSON par page
+    let pageAnnotationsData = {};
     let currentTool = 'select';
     let isDrawingShape = false;
     let shapeStartX = 0, shapeStartY = 0;
     let tempShape = null;
 
-    // Épaisseur et couleur
     const strokeSlider = document.getElementById('annotate-stroke');
     const strokeValue = document.getElementById('stroke-value');
     strokeSlider.addEventListener('input', () => {
@@ -778,7 +1084,6 @@
       }
     });
 
-    // Chargement du PDF
     document.getElementById('annotate-file').addEventListener('change', async (e) => {
       annotateFile = e.target.files[0];
       if (!annotateFile) return;
@@ -795,7 +1100,6 @@
         document.getElementById('annotate-workspace').style.display = 'block';
         updateCounter('annotate-counter', `🎨 Prêt à annoter ${totalAnnotatePages} page${totalAnnotatePages > 1 ? 's' : ''}`);
 
-        // Initialiser Fabric.js
         const canvasEl = document.getElementById('annotate-canvas');
         if (fabricCanvas) fabricCanvas.dispose();
         fabricCanvas = new fabric.Canvas('annotate-canvas', {
@@ -804,7 +1108,6 @@
           backgroundColor: null
         });
 
-        // Mode crayon par défaut
         fabricCanvas.freeDrawingBrush.width = parseInt(strokeSlider.value);
         fabricCanvas.freeDrawingBrush.color = document.getElementById('annotate-color').value;
 
@@ -813,7 +1116,6 @@
       } catch (err) { setStatus('❌ Erreur: ' + err.message, true); console.error(err); }
     });
 
-    // Charger une page
     async function loadAnnotatePage(pageNum) {
       currentAnnotatePage = pageNum;
       document.getElementById('current-page').textContent = pageNum;
@@ -821,7 +1123,6 @@
       const page = await annotatePdf.getPage(pageNum);
       const viewport = page.getViewport({ scale: 1.5 });
 
-      // Rendre la page PDF sur un canvas temporaire
       const tempCanvas = document.createElement('canvas');
       tempCanvas.width = viewport.width;
       tempCanvas.height = viewport.height;
@@ -830,12 +1131,10 @@
 
       const dataURL = tempCanvas.toDataURL();
 
-      // Configurer Fabric
       fabricCanvas.clear();
       fabricCanvas.setWidth(viewport.width);
       fabricCanvas.setHeight(viewport.height);
 
-      // Ajouter l'image du PDF comme fond
       await new Promise((resolve) => {
         fabric.Image.fromURL(dataURL, (img) => {
           fabricCanvas.setBackgroundImage(img, fabricCanvas.renderAll.bind(fabricCanvas), {
@@ -846,19 +1145,16 @@
         });
       });
 
-      // Recharger les annotations de cette page
       if (pageAnnotationsData[pageNum]) {
         const json = pageAnnotationsData[pageNum];
         if (json && json.length > 0) {
           await fabricCanvas.loadFromJSON(json);
-          // Remettre le fond
           await new Promise((resolve) => {
             fabric.Image.fromURL(dataURL, (img) => {
               fabricCanvas.setBackgroundImage(img, fabricCanvas.renderAll.bind(fabricCanvas), {
                 scaleX: viewport.width / img.width,
                 scaleY: viewport.height / img.height
               });
-              // Envoyer le fond derrière
               fabricCanvas.backgroundImage && fabricCanvas.backgroundImage.sendToBack();
               resolve();
             });
@@ -866,11 +1162,9 @@
         }
       }
 
-      // Appliquer l'outil courant
       setTool(currentTool);
     }
 
-    // Sélection des outils
     document.querySelectorAll('.tool').forEach(btn => {
       btn.addEventListener('click', () => {
         const tool = btn.dataset.tool;
@@ -889,8 +1183,6 @@
       fabricCanvas.off('mouse:down');
       fabricCanvas.off('mouse:move');
       fabricCanvas.off('mouse:up');
-
-      // Supprimer les listeners de texte
       fabricCanvas.off('mouse:dblclick');
 
       switch(tool) {
@@ -1002,7 +1294,6 @@
         isDrawingShape = false;
 
         if (currentTool === 'arrow' && tempShape) {
-          // Remplacer la ligne par un groupe avec pointe de flèche
           const x1 = tempShape.x1, y1 = tempShape.y1;
           const x2 = tempShape.x2, y2 = tempShape.y2;
           fabricCanvas.remove(tempShape);
@@ -1012,7 +1303,6 @@
             strokeWidth: tempShape.strokeWidth
           });
 
-          // Calculer la pointe de flèche
           const angle = Math.atan2(y2 - y1, x2 - x1);
           const headLength = 15 + tempShape.strokeWidth * 2;
           const arrowX1 = x2 - headLength * Math.cos(angle - Math.PI / 6);
@@ -1044,7 +1334,6 @@
       });
     }
 
-    // Annuler
     document.getElementById('undo-btn').addEventListener('click', () => {
       const objects = fabricCanvas.getObjects();
       if (objects.length > 0) {
@@ -1053,7 +1342,6 @@
       }
     });
 
-    // Effacer tout
     document.getElementById('clear-btn').addEventListener('click', () => {
       if (confirm('Effacer toutes les annotations de cette page ?')) {
         fabricCanvas.getObjects().slice().forEach(obj => fabricCanvas.remove(obj));
@@ -1061,10 +1349,8 @@
       }
     });
 
-    // Navigation entre pages
     document.getElementById('prev-page-btn').addEventListener('click', async () => {
       if (currentAnnotatePage > 1) {
-        // Sauvegarder les annotations actuelles
         saveCurrentPageAnnotations();
         await loadAnnotatePage(currentAnnotatePage - 1);
       }
@@ -1083,21 +1369,17 @@
       pageAnnotationsData[currentAnnotatePage] = json;
     }
 
-    // Sauvegarder le PDF annoté
     document.getElementById('save-annotate-btn').addEventListener('click', async () => {
       if (!annotatePdf) return setStatus('❌ Pas de PDF chargé', true);
       setStatus('⏳ Sauvegarde en cours...');
       document.getElementById('save-annotate-btn').disabled = true;
 
       try {
-        // Sauvegarder la page courante
         saveCurrentPageAnnotations();
 
-        // Charger le PDF original
         const pdfBytes = await annotateFile.arrayBuffer();
         const pdfDoc = await PDFDocument.load(pdfBytes);
 
-        // Pour chaque page annotée, superposer l'image des annotations
         for (let pageNum = 1; pageNum <= totalAnnotatePages; pageNum++) {
           const annotations = pageAnnotationsData[pageNum];
           if (!annotations || annotations.length === 0) continue;
@@ -1105,7 +1387,6 @@
           const page = pdfDoc.getPage(pageNum - 1);
           const { width, height } = page.getSize();
 
-          // Créer un canvas temporaire pour rendre les annotations
           const tempCanvas = document.createElement('canvas');
           tempCanvas.width = width * 2;
           tempCanvas.height = height * 2;
@@ -1114,26 +1395,15 @@
             height: height * 2
           });
 
-          // Charger les annotations
           await new Promise((resolve) => {
             tempFabric.loadFromJSON(annotations, () => {
-              // Mettre à l'échelle : les annotations ont été faites sur un canvas à scale 1.5
-              // La page PDF a sa taille réelle. On doit adapter.
-              const pdfPage = annotatePdf.getPage ? null : null;
               resolve();
             });
           });
 
-          // Récupérer l'image du canvas
           const dataUrl = tempCanvas.toDataURL({ format: 'png' });
           const pngBytes = await fetch(dataUrl).then(r => r.arrayBuffer());
           const pngImage = await pdfDoc.embedPng(pngBytes);
-
-          // Calculer l'échelle pour adapter au PDF
-          // Le canvas des annotations était à scale 1.5 de la taille PDF en points
-          // On doit redimensionner pour correspondre à la page PDF
-          const scaleX = width / (tempCanvas.width / 1.5);
-          const scaleY = height / (tempCanvas.height / 1.5);
 
           page.drawImage(pngImage, {
             x: 0,
