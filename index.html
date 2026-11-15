@@ -60,7 +60,7 @@
     .annotate-toolbar { display: flex; flex-wrap: wrap; gap: 10px; margin: 15px 0; padding: 15px; background: #0f172a; border-radius: 10px; align-items: center; }
     .annotate-toolbar .separator { width: 1px; height: 30px; background: #475569; margin: 0 5px; }
     
-    /* ✅ NOUVEAU : Conteneur pour superposer les deux canvas */
+    /* ✅ Conteneur pour superposer les deux canvas */
     .annotate-canvas-container {
       position: relative;
       display: inline-block;
@@ -70,20 +70,21 @@
       overflow: hidden;
       background: white;
       max-width: 100%;
-      overflow-x: auto;
     }
+
     #pdf-canvas {
       display: block;
-      border: none;
-      margin: 0;
+      position: relative;
+      z-index: 1;
     }
+
     #annotate-canvas {
       position: absolute;
       top: 0;
       left: 0;
-      border: none;
-      margin: 0;
+      z-index: 10;
       background: transparent !important;
+      cursor: crosshair;
     }
     
     .page-nav { display: flex; align-items: center; justify-content: center; gap: 15px; margin: 15px 0; flex-wrap: wrap; }
@@ -1043,7 +1044,7 @@
     });
 
     // ============================================================
-    // ANNOTATION - VERSION CORRIGÉE AVEC DEUX CANVAS SUPERPOSÉS
+    // ANNOTATION - VERSION CORRIGÉE
     // ============================================================
     let fabricCanvas = null;
     let currentAnnotatePage = 1;
@@ -1085,12 +1086,11 @@
         document.getElementById('annotate-workspace').style.display = 'block';
         updateCounter('annotate-counter', `🎨 Prêt à annoter ${totalAnnotatePages} page${totalAnnotatePages > 1 ? 's' : ''}`);
 
-        // Initialiser Fabric.js sur le canvas du haut (transparent)
         if (fabricCanvas) fabricCanvas.dispose();
         fabricCanvas = new fabric.Canvas('annotate-canvas', {
           isDrawingMode: false,
           selection: true,
-          backgroundColor: null  // ✅ Fond transparent
+          backgroundColor: null
         });
 
         fabricCanvas.freeDrawingBrush.width = parseInt(strokeSlider.value);
@@ -1101,7 +1101,6 @@
       } catch (err) { setStatus('❌ Erreur: ' + err.message, true); console.error(err); }
     });
 
-    // ✅ NOUVELLE VERSION : utilise deux canvas séparés
     async function loadAnnotatePage(pageNum) {
       currentAnnotatePage = pageNum;
       document.getElementById('current-page').textContent = pageNum;
@@ -1109,25 +1108,27 @@
       const page = await annotatePdf.getPage(pageNum);
       const viewport = page.getViewport({ scale: 1.5 });
 
-      // 1. Rendre le PDF sur le canvas HTML du bas
       const pdfCanvas = document.getElementById('pdf-canvas');
       pdfCanvas.width = viewport.width;
       pdfCanvas.height = viewport.height;
       const ctx = pdfCanvas.getContext('2d');
       
-      // Fond blanc
       ctx.fillStyle = 'white';
       ctx.fillRect(0, 0, viewport.width, viewport.height);
-      
       await page.render({ canvasContext: ctx, viewport }).promise;
 
-      // 2. Configurer le canvas Fabric.js du haut (transparent)
       fabricCanvas.clear();
       fabricCanvas.setWidth(viewport.width);
       fabricCanvas.setHeight(viewport.height);
+      
+      const fabricCanvasElement = fabricCanvas.getElement();
+      fabricCanvasElement.style.position = 'absolute';
+      fabricCanvasElement.style.top = '0';
+      fabricCanvasElement.style.left = '0';
+      fabricCanvasElement.style.zIndex = '10';
+      
       fabricCanvas.renderAll();
 
-      // 3. Recharger les annotations de cette page si elles existent
       if (pageAnnotationsData[pageNum] && pageAnnotationsData[pageNum].length > 0) {
         await new Promise((resolve) => {
           fabricCanvas.loadFromJSON(pageAnnotationsData[pageNum], () => {
@@ -1137,7 +1138,6 @@
         });
       }
 
-      // 4. Appliquer l'outil courant
       setTool(currentTool);
     }
 
@@ -1156,29 +1156,50 @@
 
       fabricCanvas.isDrawingMode = false;
       fabricCanvas.selection = false;
+      
       fabricCanvas.off('mouse:down');
       fabricCanvas.off('mouse:move');
       fabricCanvas.off('mouse:up');
       fabricCanvas.off('mouse:dblclick');
 
+      fabricCanvas.forEachObject(obj => { 
+        obj.selectable = true; 
+        obj.evented = true; 
+      });
+
       switch(tool) {
         case 'select':
           fabricCanvas.selection = true;
-          fabricCanvas.forEachObject(obj => { obj.selectable = true; obj.evented = true; });
+          fabricCanvas.defaultCursor = 'default';
           break;
+          
         case 'pen':
           fabricCanvas.isDrawingMode = true;
           fabricCanvas.freeDrawingBrush.width = parseInt(strokeSlider.value);
           fabricCanvas.freeDrawingBrush.color = document.getElementById('annotate-color').value;
+          fabricCanvas.defaultCursor = 'crosshair';
           break;
+          
         case 'arrow':
         case 'circle':
         case 'rectangle':
-          fabricCanvas.forEachObject(obj => { obj.selectable = false; obj.evented = false; });
+          fabricCanvas.selection = false;
+          fabricCanvas.forEachObject(obj => { 
+            obj.selectable = false; 
+            obj.evented = false; 
+          });
+          fabricCanvas.defaultCursor = 'crosshair';
           setupShapeDrawing(tool);
           break;
+          
         case 'text':
-          fabricCanvas.forEachObject(obj => { obj.selectable = false; obj.evented = false; });
+          fabricCanvas.selection = false;
+          fabricCanvas.forEachObject(obj => { 
+            obj.selectable = false; 
+            obj.evented = false; 
+          });
+          fabricCanvas.defaultCursor = 'text';
+          
           fabricCanvas.on('mouse:down', (options) => {
             const pointer = fabricCanvas.getPointer(options.e);
             const text = new fabric.IText('Texte', {
@@ -1195,6 +1216,8 @@
           });
           break;
       }
+      
+      fabricCanvas.renderAll();
     }
 
     function setupShapeDrawing(tool) {
@@ -1363,7 +1386,6 @@
           const page = pdfDoc.getPage(pageNum - 1);
           const { width, height } = page.getSize();
 
-          // Créer un canvas temporaire pour rendre les annotations
           const annotWidth = width * 1.5;
           const annotHeight = height * 1.5;
 
