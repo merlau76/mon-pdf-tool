@@ -59,8 +59,41 @@
     .annotate-workspace { margin-top: 20px; }
     .annotate-toolbar { display: flex; flex-wrap: wrap; gap: 10px; margin: 15px 0; padding: 15px; background: #0f172a; border-radius: 10px; align-items: center; }
     .annotate-toolbar .separator { width: 1px; height: 30px; background: #475569; margin: 0 5px; }
-    .annotate-canvas-container { position: relative; display: inline-block; margin: 20px auto; border: 2px solid #475569; border-radius: 8px; overflow: auto; background: white; max-width: 100%; }
-    .annotate-canvas-container canvas { display: block; border: none; margin: 0; }
+    
+    /* ✅ CONTENEUR POUR LES DEUX CANVAS */
+    .annotate-canvas-container {
+      position: relative;
+      display: inline-block;
+      margin: 20px auto;
+      border: 3px solid #475569;
+      border-radius: 8px;
+      overflow: hidden;
+      background: white;
+      max-width: 100%;
+    }
+    
+    /* Canvas du bas : affiche le PDF */
+    #pdf-display-canvas {
+      display: block;
+      position: relative;
+      z-index: 1;
+      border: none;
+      margin: 0;
+      background: white;
+    }
+    
+    /* Canvas du haut : reçoit les annotations */
+    #annotate-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 10;
+      border: none;
+      margin: 0;
+      background: transparent !important;
+      cursor: crosshair;
+    }
+    
     .page-nav { display: flex; align-items: center; justify-content: center; gap: 15px; margin: 15px 0; flex-wrap: wrap; }
     .page-nav button { padding: 8px 16px; font-size: 14px; }
     .page-info { font-weight: 600; color: #60a5fa; }
@@ -365,7 +398,7 @@
       </div>
     </div>
 
-    <!-- ANNOTATION AMÉLIORÉE -->
+    <!-- ANNOTATION AVEC DEUX CANVAS -->
     <div class="card annotate">
       <h2>🎨 Annotation Interactive</h2>
       <p class="info">Dessinez des flèches, cercles, rectangles et texte sur votre PDF avec couleurs personnalisables</p>
@@ -398,7 +431,8 @@
         </div>
 
         <div style="text-align: center;">
-          <div class="annotate-canvas-container">
+          <div class="annotate-canvas-container" id="canvas-container">
+            <canvas id="pdf-display-canvas"></canvas>
             <canvas id="annotate-canvas"></canvas>
           </div>
         </div>
@@ -1022,13 +1056,12 @@
     });
 
     // ============================================================
-    // ===== ANNOTATION AMÉLIORÉE - UN SEUL CANVAS =====
+    // ===== ANNOTATION - DEUX CANVAS SUPERPOSÉS =====
     // ============================================================
     let fabricCanvas = null;
     let currentAnnotatePage = 1;
     let totalAnnotatePages = 1;
     let pageAnnotationsData = {};
-    let pageBackgrounds = {}; // Stocke les dataURL des pages
     let currentTool = 'pen';
     let isDrawing = false;
     let startX = 0, startY = 0;
@@ -1064,20 +1097,19 @@
         totalAnnotatePages = annotatePdf.numPages;
         currentAnnotatePage = 1;
         pageAnnotationsData = {};
-        pageBackgrounds = {};
-        for (let i = 1; i <= totalAnnotatePages; i++) {
-          pageAnnotationsData[i] = [];
-        }
+        for (let i = 1; i <= totalAnnotatePages; i++) pageAnnotationsData[i] = [];
 
         document.getElementById('annotate-info').textContent = `✅ ${annotateFile.name} (${totalAnnotatePages} pages)`;
         document.getElementById('total-pages').textContent = totalAnnotatePages;
         document.getElementById('annotate-workspace').style.display = 'block';
         updateCounter('annotate-counter', `🎨 Prêt à annoter ${totalAnnotatePages} page${totalAnnotatePages > 1 ? 's' : ''}`);
 
+        // ✅ Initialiser Fabric.js sur le canvas du HAUT (transparent)
         if (fabricCanvas) fabricCanvas.dispose();
         fabricCanvas = new fabric.Canvas('annotate-canvas', {
           isDrawingMode: false,
-          selection: false
+          selection: false,
+          backgroundColor: 'transparent'
         });
 
         fabricCanvas.freeDrawingBrush.color = currentColor;
@@ -1088,6 +1120,7 @@
       } catch (err) { setStatus('❌ Erreur: ' + err.message, true); console.error(err); }
     });
 
+    // ✅ Charger une page : PDF sur le canvas du bas, annotations sur celui du haut
     async function loadAnnotatePage(pageNum) {
       currentAnnotatePage = pageNum;
       document.getElementById('current-page').textContent = pageNum;
@@ -1095,53 +1128,35 @@
       const page = await annotatePdf.getPage(pageNum);
       const viewport = page.getViewport({ scale: 1.5 });
 
-      // Rendre le PDF sur un canvas temporaire
-      const tempCanvas = document.createElement('canvas');
-      tempCanvas.width = viewport.width;
-      tempCanvas.height = viewport.height;
-      const ctx = tempCanvas.getContext('2d');
+      // 1. Rendre le PDF sur le canvas du BAS
+      const pdfCanvas = document.getElementById('pdf-display-canvas');
+      pdfCanvas.width = viewport.width;
+      pdfCanvas.height = viewport.height;
+      const ctx = pdfCanvas.getContext('2d');
       ctx.fillStyle = 'white';
       ctx.fillRect(0, 0, viewport.width, viewport.height);
       await page.render({ canvasContext: ctx, viewport }).promise;
-      const dataURL = tempCanvas.toDataURL();
-      pageBackgrounds[pageNum] = dataURL;
 
-      // Configurer le canvas Fabric
-      const canvasEl = document.getElementById('annotate-canvas');
-      canvasEl.width = viewport.width;
-      canvasEl.height = viewport.height;
+      // 2. Configurer le canvas Fabric du HAUT avec les MÊMES dimensions
+      const annotateCanvasEl = document.getElementById('annotate-canvas');
+      annotateCanvasEl.width = viewport.width;
+      annotateCanvasEl.height = viewport.height;
+      
+      // ✅ Forcer le positionnement exact
+      annotateCanvasEl.style.width = viewport.width + 'px';
+      annotateCanvasEl.style.height = viewport.height + 'px';
 
       fabricCanvas.clear();
       fabricCanvas.setWidth(viewport.width);
       fabricCanvas.setHeight(viewport.height);
+      fabricCanvas.backgroundColor = 'transparent';
 
-      // Charger l'image du PDF comme fond
-      await new Promise((resolve) => {
-        fabric.Image.fromURL(dataURL, (img) => {
-          fabricCanvas.setBackgroundImage(img, fabricCanvas.renderAll.bind(fabricCanvas), {
-            scaleX: viewport.width / img.width,
-            scaleY: viewport.height / img.height,
-            selectable: false,
-            evented: false
-          });
-          resolve();
-        });
-      });
-
-      // Recharger les annotations de cette page si elles existent
+      // 3. Recharger les annotations si elles existent
       if (pageAnnotationsData[pageNum] && pageAnnotationsData[pageNum].length > 0) {
         await new Promise((resolve) => {
           fabricCanvas.loadFromJSON(pageAnnotationsData[pageNum], () => {
-            // Remettre l'image de fond
-            fabric.Image.fromURL(dataURL, (img) => {
-              fabricCanvas.setBackgroundImage(img, fabricCanvas.renderAll.bind(fabricCanvas), {
-                scaleX: viewport.width / img.width,
-                scaleY: viewport.height / img.height,
-                selectable: false,
-                evented: false
-              });
-              resolve();
-            });
+            fabricCanvas.renderAll();
+            resolve();
           });
         });
       }
@@ -1169,10 +1184,8 @@
       fabricCanvas.off('mouse:up');
 
       fabricCanvas.getObjects().forEach(obj => {
-        if (obj !== fabricCanvas.backgroundImage) {
-          obj.selectable = (tool === 'select');
-          obj.evented = true;
-        }
+        obj.selectable = (tool === 'select');
+        obj.evented = true;
       });
 
       if (tool === 'pen') {
@@ -1204,7 +1217,6 @@
         });
       }
       else {
-        // Cercle, Rectangle, Flèche
         fabricCanvas.defaultCursor = 'crosshair';
         
         fabricCanvas.on('mouse:down', function(options) {
@@ -1297,9 +1309,8 @@
 
     document.getElementById('clear-btn').addEventListener('click', () => {
       if (confirm('Effacer toutes les annotations de cette page ?')) {
-        const bgImage = fabricCanvas.backgroundImage;
         fabricCanvas.clear();
-        fabricCanvas.setBackgroundImage(bgImage, fabricCanvas.renderAll.bind(fabricCanvas));
+        fabricCanvas.backgroundColor = 'transparent';
         fabricCanvas.renderAll();
       }
     });
@@ -1319,11 +1330,12 @@
     });
 
     function saveCurrentPageAnnotations() {
-      const objects = fabricCanvas.getObjects().filter(obj => obj !== fabricCanvas.backgroundImage);
+      const objects = fabricCanvas.getObjects().slice();
       const json = objects.map(obj => obj.toJSON());
       pageAnnotationsData[currentAnnotatePage] = json;
     }
 
+    // ✅ Sauvegarder le PDF annoté : combiner le PDF + les annotations
     document.getElementById('save-annotate-btn').addEventListener('click', async () => {
       if (!annotatePdf) return setStatus('❌ Pas de PDF chargé', true);
       setStatus('⏳ Sauvegarde en cours...');
@@ -1342,6 +1354,7 @@
           const page = pdfDoc.getPage(pageNum - 1);
           const { width, height } = page.getSize();
 
+          // Créer un canvas temporaire pour rendre les annotations
           const annotWidth = width * 1.5;
           const annotHeight = height * 1.5;
 
