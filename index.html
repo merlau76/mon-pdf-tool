@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Mon outil PDF</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 50px auto;
+      padding: 20px;
+      text-align: center;
+    }
+    h1 { color: #2563eb; }
+    .drop-zone {
+      border: 3px dashed #2563eb;
+      padding: 40px;
+      margin: 20px 0;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+    .drop-zone:hover { background: #eff6ff; }
+    button {
+      background: #2563eb;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      font-size: 16px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    button:hover { background: #1d4ed8; }
+    button:disabled { background: #9ca3af; cursor: not-allowed; }
+    #status { margin-top: 20px; color: #059669; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h1>🔗 Fusionner des PDF</h1>
+  <p>Choisis plusieurs fichiers PDF, puis clique sur "Fusionner"</p>
+
+  <div class="drop-zone" onclick="document.getElementById('files').click()">
+    📁 Clique ici pour choisir des PDF
+    <input type="file" id="files" accept="application/pdf" multiple hidden>
+  </div>
+
+  <div id="file-list"></div>
+
+  <button id="merge-btn" disabled>Fusionner les PDF</button>
+  <div id="status"></div>
+
+  <!-- La bibliothèque magique qui manipule les PDF -->
+  <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+
+  <script>
+    const { PDFDocument } = PDFLib;
+    let selectedFiles = [];
+
+    const filesInput = document.getElementById('files');
+    const mergeBtn = document.getElementById('merge-btn');
+    const fileList = document.getElementById('file-list');
+    const status = document.getElementById('status');
+
+    // Quand l'utilisateur choisit des fichiers
+    filesInput.addEventListener('change', (e) => {
+      selectedFiles = Array.from(e.target.files);
+      fileList.innerHTML = selectedFiles
+        .map(f => `<p>✅ ${f.name}</p>`)
+        .join('');
+      mergeBtn.disabled = selectedFiles.length < 2;
+    });
+
+    // Quand on clique sur "Fusionner"
+    mergeBtn.addEventListener('click', async () => {
+      status.textContent = '⏳ Fusion en cours...';
+      mergeBtn.disabled = true;
+
+      try {
+        // 1. Créer un nouveau PDF vide
+        const mergedPdf = await PDFDocument.create();
+
+        // 2. Pour chaque fichier, copier ses pages
+        for (const file of selectedFiles) {
+          const arrayBuffer = await file.arrayBuffer();
+          const pdf = await PDFDocument.load(arrayBuffer);
+          const pages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
+          pages.forEach(page => mergedPdf.addPage(page));
+        }
+
+        // 3. Sauvegarder et télécharger
+        const pdfBytes = await mergedPdf.save();
+        download(pdfBytes, 'fusionne.pdf', 'application/pdf');
+
+        status.textContent = '✅ Fusion réussie !';
+      } catch (error) {
+        status.textContent = '❌ Erreur : ' + error.message;
+        console.error(error);
+      } finally {
+        mergeBtn.disabled = false;
+      }
+    });
+
+    // Fonction utilitaire pour télécharger un fichier
+    function download(data, filename, type) {
+      const blob = new Blob([data], { type: type });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+  </script>
+</body>
+</html>
