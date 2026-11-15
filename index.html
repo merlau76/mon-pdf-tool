@@ -141,6 +141,46 @@
     input[type="text"] { width: 180px; }
     input[type="number"] { width: 80px; }
     
+    /* NOUVEAU : Compteur de pages */
+    .counter {
+      display: inline-block;
+      background: #0f172a;
+      color: #60a5fa;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin: 8px 0;
+      border: 1px solid #334155;
+    }
+    
+    .counter.hidden { display: none; }
+    
+    /* NOUVEAU : Champ nom de fichier */
+    .filename-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 10px 0;
+      flex-wrap: wrap;
+    }
+    
+    .filename-row label {
+      font-size: 0.9rem;
+      color: #94a3b8;
+      font-weight: 500;
+    }
+    
+    .filename-row input {
+      flex: 1;
+      min-width: 150px;
+    }
+    
+    .filename-row .ext {
+      color: #64748b;
+      font-size: 0.85rem;
+    }
+    
     #status {
       text-align: center;
       margin-top: 30px;
@@ -196,9 +236,7 @@
     }
     
     @media (max-width: 768px) {
-      .grid {
-        grid-template-columns: 1fr;
-      }
+      .grid { grid-template-columns: 1fr; }
       h1 { font-size: 1.8rem; }
     }
   </style>
@@ -216,6 +254,14 @@
       <div class="drop-zone" onclick="document.getElementById('merge-files').click()">📁 Choisir plusieurs PDF</div>
       <input type="file" id="merge-files" accept="application/pdf" multiple hidden>
       <div id="merge-list" class="info"></div>
+      <div id="merge-counter" class="counter hidden"></div>
+      
+      <div class="filename-row">
+        <label for="merge-filename">📝 Nom :</label>
+        <input type="text" id="merge-filename" placeholder="fusionne">
+        <span class="ext">.pdf</span>
+      </div>
+      
       <button id="merge-btn" disabled>Fusionner</button>
     </div>
 
@@ -226,6 +272,14 @@
       <input type="file" id="split-file" accept="application/pdf" hidden>
       <div id="split-info" class="info"></div>
       <input type="text" id="pages-input" placeholder="Ex: 1, 3, 5-7">
+      <div id="split-counter" class="counter hidden"></div>
+      
+      <div class="filename-row">
+        <label for="split-filename">📝 Nom :</label>
+        <input type="text" id="split-filename" placeholder="extrait">
+        <span class="ext">.pdf</span>
+      </div>
+      
       <button id="split-btn" disabled>Extraire</button>
     </div>
 
@@ -235,6 +289,14 @@
       <div class="drop-zone" onclick="document.getElementById('img-files').click()">📁 Choisir des images</div>
       <input type="file" id="img-files" accept="image/jpeg, image/png" multiple hidden>
       <div id="img-list" class="info"></div>
+      <div id="img-counter" class="counter hidden"></div>
+      
+      <div class="filename-row">
+        <label for="img-filename">📝 Nom :</label>
+        <input type="text" id="img-filename" placeholder="images">
+        <span class="ext">.pdf</span>
+      </div>
+      
       <button id="img-to-pdf-btn" disabled>Créer le PDF</button>
     </div>
 
@@ -244,6 +306,14 @@
       <div class="drop-zone" onclick="document.getElementById('pdf-to-img-file').click()">📁 Choisir un PDF</div>
       <input type="file" id="pdf-to-img-file" accept="application/pdf" hidden>
       <div id="pdf-to-img-info" class="info"></div>
+      <div id="pdf-to-img-counter" class="counter hidden"></div>
+      
+      <div class="filename-row">
+        <label for="pdf-to-img-filename">📝 Préfixe :</label>
+        <input type="text" id="pdf-to-img-filename" placeholder="page">
+        <span class="ext">_1.jpg, _2.jpg...</span>
+      </div>
+      
       <button id="pdf-to-img-btn" disabled>Convertir</button>
       <p class="info">⚠️ Autorise les téléchargements multiples</p>
     </div>
@@ -254,6 +324,7 @@
       <div class="drop-zone" onclick="document.getElementById('sign-file').click()">📁 Choisir un PDF</div>
       <input type="file" id="sign-file" accept="application/pdf" hidden>
       <div id="sign-info" class="info"></div>
+      <div id="sign-counter" class="counter hidden"></div>
       
       <p style="margin-top:15px;"><strong>Dessinez votre signature :</strong></p>
       <canvas id="sig-canvas" width="280" height="140"></canvas>
@@ -275,6 +346,12 @@
         </select>
       </div>
       
+      <div class="filename-row">
+        <label for="sign-filename">📝 Nom :</label>
+        <input type="text" id="sign-filename" placeholder="document_signe">
+        <span class="ext">.pdf</span>
+      </div>
+      
       <button id="sign-btn" disabled style="margin-top:15px;">✅ Signer</button>
     </div>
 
@@ -282,7 +359,6 @@
 
   <div id="status"></div>
 
-  <!-- Bibliothèques externes -->
   <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.5/dist/signature_pad.umd.min.js"></script>
@@ -293,6 +369,19 @@
 
     let mergeFiles = [], splitFile = null, imgFiles = [], pdfToImgFile = null, signFile = null, signPdf = null;
     const status = document.getElementById('status');
+
+    // NOUVEAU : Fonction pour obtenir le nom de fichier personnalisé
+    function getFilename(inputId, defaultName) {
+      const custom = document.getElementById(inputId).value.trim();
+      return (custom || defaultName);
+    }
+
+    // NOUVEAU : Fonction pour mettre à jour un compteur
+    function updateCounter(counterId, text) {
+      const counter = document.getElementById(counterId);
+      counter.textContent = text;
+      counter.classList.remove('hidden');
+    }
 
     function download(data, filename, type) {
       const blob = data instanceof Uint8Array ? new Blob([data], { type }) : new Blob([data], { type });
@@ -312,11 +401,27 @@
       status.className = isError ? 'error' : 'success';
     }
 
+    // ==========================================
     // FUSION
-    document.getElementById('merge-files').addEventListener('change', (e) => {
+    // ==========================================
+    document.getElementById('merge-files').addEventListener('change', async (e) => {
       mergeFiles = Array.from(e.target.files);
       document.getElementById('merge-list').textContent = mergeFiles.map(f => `✅ ${f.name}`).join(' | ');
       document.getElementById('merge-btn').disabled = mergeFiles.length < 2;
+      
+      // NOUVEAU : Compter le total de pages
+      if (mergeFiles.length > 0) {
+        try {
+          let totalPages = 0;
+          for (const file of mergeFiles) {
+            const pdf = await PDFDocument.load(await file.arrayBuffer());
+            totalPages += pdf.getPageCount();
+          }
+          updateCounter('merge-counter', `📄 ${totalPages} page${totalPages > 1 ? 's' : ''} au total`);
+        } catch (err) {
+          updateCounter('merge-counter', `⚠️ Erreur de lecture`);
+        }
+      }
     });
 
     document.getElementById('merge-btn').addEventListener('click', async () => {
@@ -328,18 +433,49 @@
           const pages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
           pages.forEach(page => mergedPdf.addPage(page));
         }
-        download(await mergedPdf.save(), 'fusionne.pdf', 'application/pdf');
+        const filename = getFilename('merge-filename', 'fusionne') + '.pdf';
+        download(await mergedPdf.save(), filename, 'application/pdf');
         setStatus('✅ Fusion réussie !');
       } catch (err) { setStatus('❌ Erreur: ' + err.message, true); }
     });
 
+    // ==========================================
     // DECOUPE
+    // ==========================================
     document.getElementById('split-file').addEventListener('change', async (e) => {
       splitFile = e.target.files[0];
       if (!splitFile) return;
       const pdf = await PDFDocument.load(await splitFile.arrayBuffer());
       document.getElementById('split-info').textContent = `✅ ${splitFile.name} (${pdf.getPageCount()} pages)`;
       document.getElementById('split-btn').disabled = false;
+      updateCounter('split-counter', `📄 ${pdf.getPageCount()} page${pdf.getPageCount() > 1 ? 's' : ''} dans le PDF`);
+    });
+
+    // NOUVEAU : Mettre à jour le compteur quand on change les pages à extraire
+    document.getElementById('pages-input').addEventListener('input', () => {
+      if (!splitFile) return;
+      const input = document.getElementById('pages-input').value;
+      if (!input.trim()) {
+        updateCounter('split-counter', `📄 Aucune page sélectionnée`);
+        return;
+      }
+      try {
+        const pdf = await PDFDocument.load(await splitFile.arrayBuffer());
+        const maxPages = pdf.getPageCount();
+        const indices = new Set();
+        input.split(',').forEach(part => {
+          part = part.trim();
+          if (part.includes('-')) {
+            const [start, end] = part.split('-').map(Number);
+            for (let i = start; i <= end && i <= maxPages; i++) indices.add(i - 1);
+          } else {
+            const n = Number(part);
+            if (n >= 1 && n <= maxPages) indices.add(n - 1);
+          }
+        });
+        const count = indices.size;
+        updateCounter('split-counter', `✂️ ${count} page${count > 1 ? 's' : ''} à extraire`);
+      } catch (err) {}
     });
 
     document.getElementById('split-btn').addEventListener('click', async () => {
@@ -367,16 +503,24 @@
         const pages = await newPdf.copyPages(pdf, pageIndices);
         pages.forEach(page => newPdf.addPage(page));
         
-        download(await newPdf.save(), 'extrait.pdf', 'application/pdf');
+        const filename = getFilename('split-filename', 'extrait') + '.pdf';
+        download(await newPdf.save(), filename, 'application/pdf');
         setStatus('✅ Découpe réussie !');
       } catch (err) { setStatus('❌ Erreur: ' + err.message, true); }
     });
 
+    // ==========================================
     // IMAGES VERS PDF
+    // ==========================================
     document.getElementById('img-files').addEventListener('change', (e) => {
       imgFiles = Array.from(e.target.files);
       document.getElementById('img-list').textContent = imgFiles.map(f => `✅ ${f.name}`).join(' | ');
       document.getElementById('img-to-pdf-btn').disabled = imgFiles.length === 0;
+      
+      // NOUVEAU : Compteur = nombre d'images = nombre de pages
+      if (imgFiles.length > 0) {
+        updateCounter('img-counter', `🖼️ ${imgFiles.length} image${imgFiles.length > 1 ? 's' : ''} → ${imgFiles.length} page${imgFiles.length > 1 ? 's' : ''}`);
+      }
     });
 
     document.getElementById('img-to-pdf-btn').addEventListener('click', async () => {
@@ -389,23 +533,30 @@
           const page = pdf.addPage([image.width, image.height]);
           page.drawImage(image, { x: 0, y: 0, width: image.width, height: image.height });
         }
-        download(await pdf.save(), 'images.pdf', 'application/pdf');
+        const filename = getFilename('img-filename', 'images') + '.pdf';
+        download(await pdf.save(), filename, 'application/pdf');
         setStatus('✅ PDF créé avec succès !');
       } catch (err) { setStatus('❌ Erreur: ' + err.message, true); }
     });
 
+    // ==========================================
     // PDF VERS IMAGES
+    // ==========================================
     document.getElementById('pdf-to-img-file').addEventListener('change', async (e) => {
       pdfToImgFile = e.target.files[0];
       if (!pdfToImgFile) return;
       const pdf = await pdfjsLib.getDocument({ data: await pdfToImgFile.arrayBuffer() }).promise;
       document.getElementById('pdf-to-img-info').textContent = `✅ ${pdfToImgFile.name} (${pdf.numPages} pages)`;
       document.getElementById('pdf-to-img-btn').disabled = false;
+      
+      // NOUVEAU : Compteur
+      updateCounter('pdf-to-img-counter', `📸 ${pdf.numPages} image${pdf.numPages > 1 ? 's' : ''} sera${pdf.numPages > 1 ? 'ont' : ''} créée${pdf.numPages > 1 ? 's' : ''}`);
     });
 
     document.getElementById('pdf-to-img-btn').addEventListener('click', async () => {
       setStatus('⏳ Conversion en cours...');
       try {
+        const prefix = getFilename('pdf-to-img-filename', 'page');
         const pdf = await pdfjsLib.getDocument({ data: await pdfToImgFile.arrayBuffer() }).promise;
         for (let i = 1; i <= pdf.numPages; i++) {
           const page = await pdf.getPage(i);
@@ -415,14 +566,16 @@
           canvas.height = viewport.height; canvas.width = viewport.width;
           await page.render({ canvasContext: context, viewport }).promise;
           
-          downloadDataURL(canvas.toDataURL('image/jpeg'), `page_${i}.jpg`);
+          downloadDataURL(canvas.toDataURL('image/jpeg'), `${prefix}_${i}.jpg`);
           await new Promise(r => setTimeout(r, 400));
         }
         setStatus('✅ Toutes les pages ont été converties !');
       } catch (err) { setStatus('❌ Erreur: ' + err.message, true); }
     });
 
+    // ==========================================
     // SIGNATURE
+    // ==========================================
     const sigCanvas = document.getElementById('sig-canvas');
     const signaturePad = new SignaturePad(sigCanvas, { backgroundColor: 'rgb(255, 255, 255)' });
     
@@ -440,6 +593,19 @@
       if (parseInt(pageInput.value) > numPages) pageInput.value = numPages;
       
       document.getElementById('sign-btn').disabled = false;
+      updateCounter('sign-counter', `📄 ${numPages} page${numPages > 1 ? 's' : ''} disponibles`);
+    });
+
+    // NOUVEAU : Mettre à jour le compteur quand on change la page de signature
+    document.getElementById('sig-page').addEventListener('input', () => {
+      if (!signPdf) return;
+      const pageIndex = parseInt(document.getElementById('sig-page').value);
+      const maxPages = signPdf.getPageCount();
+      if (pageIndex >= 1 && pageIndex <= maxPages) {
+        updateCounter('sign-counter', `✍️ Signature sur la page ${pageIndex} / ${maxPages}`);
+      } else {
+        updateCounter('sign-counter', `⚠️ Page invalide (max: ${maxPages})`);
+      }
     });
 
     document.getElementById('sign-btn').addEventListener('click', async () => {
@@ -466,35 +632,18 @@
         
         let x, y;
         switch(position) {
-          case 'bottom-right':
-            x = width - sigWidth - margin;
-            y = margin;
-            break;
-          case 'bottom-left':
-            x = margin;
-            y = margin;
-            break;
-          case 'top-right':
-            x = width - sigWidth - margin;
-            y = height - sigHeight - margin;
-            break;
-          case 'top-left':
-            x = margin;
-            y = height - sigHeight - margin;
-            break;
-          case 'center':
-            x = (width - sigWidth) / 2;
-            y = (height - sigHeight) / 2;
-            break;
-          case 'bottom-center':
-            x = (width - sigWidth) / 2;
-            y = margin;
-            break;
+          case 'bottom-right': x = width - sigWidth - margin; y = margin; break;
+          case 'bottom-left': x = margin; y = margin; break;
+          case 'top-right': x = width - sigWidth - margin; y = height - sigHeight - margin; break;
+          case 'top-left': x = margin; y = height - sigHeight - margin; break;
+          case 'center': x = (width - sigWidth) / 2; y = (height - sigHeight) / 2; break;
+          case 'bottom-center': x = (width - sigWidth) / 2; y = margin; break;
         }
         
         page.drawImage(sigImage, { x, y, width: sigWidth, height: sigHeight });
         
-        download(await signPdf.save(), 'document_signe.pdf', 'application/pdf');
+        const filename = getFilename('sign-filename', 'document_signe') + '.pdf';
+        download(await signPdf.save(), filename, 'application/pdf');
         setStatus('✅ Document signé et téléchargé !');
         clearSignature();
       } catch (err) { setStatus('❌ Erreur: ' + err.message, true); }
